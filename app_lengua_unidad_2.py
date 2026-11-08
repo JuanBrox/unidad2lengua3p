@@ -1,19 +1,46 @@
+import os
 import random
+import unicodedata
 import streamlit as st
 
 st.set_page_config(page_title="Reino de las Palabras Mágicas", page_icon="🦄", layout="centered")
 
 st.markdown("""
 <style>
-.stApp {background: linear-gradient(160deg,#fff0f8 0%,#f3e8ff 50%,#e6f4ff 100%);}
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap');
+html, body, [class*="css"], .stMarkdown, button, label {font-family:'Fredoka',sans-serif !important;}
+.stApp {background: radial-gradient(circle at 10% 0%,#ffe3f3 0%,transparent 40%),
+        radial-gradient(circle at 100% 20%,#e0ecff 0%,transparent 45%),
+        linear-gradient(160deg,#fff5fb 0%,#f4eaff 100%);}
+.block-container {padding-top:1.2rem; max-width:760px;}
 h1,h2,h3 {color:#8e2de2 !important;}
+.hero {text-align:center;background:linear-gradient(135deg,#ff9ac9,#b388ff 60%,#7cc4ff);color:white;
+       border-radius:28px;padding:18px 12px;margin-bottom:12px;box-shadow:0 8px 20px #b388ff55;}
+.hero h1 {color:white !important;margin:0;font-size:2rem;}
+.hero p {margin:4px 0 0;font-size:1.05rem;opacity:.95;}
 .card {background:#ffffffcc;border:3px dashed #e879b9;border-radius:20px;padding:14px 18px;margin:10px 0;font-size:1.1rem;}
-.big {font-size:1.25rem;}
 .pink {color:#d6336c;font-weight:700;} .blue {color:#1c7ed6;font-weight:700;}
 .green {color:#2f9e44;font-weight:700;} .purple {color:#7048e8;font-weight:700;}
 .orange {color:#e8590c;font-weight:700;}
+/* diapositivas */
+.s-head {background:linear-gradient(135deg,var(--c1),var(--c2));border-radius:24px 24px 0 0;padding:16px 18px;color:white;position:relative;}
+.s-badge {display:inline-block;background:#ffffff55;border-radius:999px;padding:2px 12px;font-size:.9rem;font-weight:600;}
+.s-emoji {font-size:3rem;line-height:1.1;margin-top:4px;}
+.s-title {font-size:1.7rem;font-weight:700;margin:0;color:white;}
+.s-pag {font-size:.95rem;opacity:.95;}
+.s-label {background:#fff;border-left:6px solid var(--c1);padding:6px 14px;font-weight:600;color:#6b2fb3;margin-top:0;}
+.s-body {background:#ffffffee;border:3px solid var(--c1);border-top:none;border-radius:0 0 24px 24px;padding:14px 18px 18px;margin-bottom:10px;font-size:1.15rem;}
+.s-body ul {margin:6px 0 10px 0;padding-left:1.2rem;} .s-body li {margin:6px 0;}
+.chips span {display:inline-block;background:var(--c2);color:#4a2a7a;border-radius:999px;padding:3px 14px;margin:3px 4px 3px 0;font-weight:600;}
+.remember {background:#fff8d6;border:2px dashed #f5b700;border-radius:16px;padding:10px 14px;margin-top:10px;font-weight:600;color:#7a5a00;}
+.dots {text-align:center;font-size:1.4rem;letter-spacing:6px;margin:4px 0 8px;}
+.stTabs [data-baseweb="tab-list"] {gap:6px;flex-wrap:wrap;}
+.stTabs [data-baseweb="tab"] {background:#ffffffaa;border-radius:16px;padding:6px 12px;font-weight:600;}
+.stTabs [aria-selected="true"] {background:#e879b9 !important;color:white !important;}
 div[data-testid="stRadio"] label {font-size:1.1rem;}
-.stButton>button {background:#e879b9;color:white;border-radius:20px;font-size:1.2rem;padding:.5rem 1.2rem;border:none;}
+.stButton>button {background:linear-gradient(135deg,#ff7eb6,#b388ff);color:white;border-radius:20px;font-size:1.15rem;
+                  padding:.5rem 1.2rem;border:none;box-shadow:0 4px 10px #b388ff55;width:100%;}
+.stButton>button:disabled {background:#ddd;box-shadow:none;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -168,58 +195,128 @@ def quiz(key, preguntas):
             st.rerun()
 
 
-st.title("🦄 Reino de las Palabras Mágicas 🧚")
-st.caption("Repaso del EXAMEN UNIDAD 2 · Lengua 3.º EP-A · lunes 9 de noviembre")
+
+# ---------- AUDIOS ----------
+BASE = os.path.dirname(os.path.abspath(__file__))
+
+
+def norm(s):
+    s = unicodedata.normalize("NFD", s)
+    s = "".join(c for c in s if unicodedata.category(c) != "Mn")
+    return s.lower().replace("_", " ").replace("-", " ")
+
+
+def buscar_audio(clave):
+    """Busca el mp3 (en ./audios, ./audio o junto a la app) cuyo nombre empieza por la clave."""
+    for carpeta in ("audios", "audio", ""):
+        d = os.path.join(BASE, carpeta)
+        if os.path.isdir(d):
+            for f in sorted(os.listdir(d)):
+                if f.lower().endswith(".mp3") and norm(f).startswith(clave):
+                    with open(os.path.join(d, f), "rb") as fh:
+                        return fh.read()
+    return None
+
+
+# ---------- DIAPOSITIVAS ----------
+SLIDES = [
+    dict(clave="la descripcion de un animal", emoji="🐱", titulo="Describir un animal", pag="pág. 32",
+         c1="#ff7eb6", c2="#ffc2dd",
+         puntos=["La descripción de un animal explica <b>cómo es</b>.",
+                 "<b>Rasgos físicos</b>: lo que se ve (pelaje, ojos, patas, bigotes).",
+                 "<b>Comportamiento</b>: cómo actúa (juguetona, nerviosa, ágil)."],
+         ejemplos=["Pica: gatita suave y pequeña", "ojos verdes (físico)", "le encanta jugar (comportamiento)"],
+         recuerda="Físico = se ve 👀 · Comportamiento = lo que hace 🏃"),
+    dict(clave="los diminutivos indican", emoji="🔍", titulo="Los diminutivos", pag="pág. 31",
+         c1="#9775fa", c2="#d0bfff",
+         puntos=["Indican un <b>tamaño menor</b> y, a veces, <b>cariño</b>.",
+                 "Terminaciones: <b>-ito, -ita, -illo, -illa</b>."],
+         ejemplos=["gatita", "patitas", "naricilla", "florecillas", "casita"],
+         recuerda="Diminutivo = pequeño y con cariño 💗"),
+    dict(clave="los aumentativos expresan", emoji="💪", titulo="Los aumentativos", pag="pág. 33",
+         c1="#ff6b6b", c2="#ffc9c9",
+         puntos=["Expresan un <b>tamaño mayor</b>.",
+                 "Terminaciones: <b>-ón, -ona, -azo, -aza, -ote, -ota</b>."],
+         ejemplos=["ojazos", "perrazo", "narizota", "cucharón", "librote"],
+         recuerda="Aumentativo = más grande 🐘"),
+    dict(clave="las oraciones empiezan", emoji="🔴", titulo="El punto y las mayúsculas", pag="pág. 35",
+         c1="#ff922b", c2="#ffd8a8",
+         puntos=["Las oraciones empiezan con <b>mayúscula</b> y terminan con <b>punto</b>.",
+                 "<b>Punto y seguido</b>: separa oraciones del mismo párrafo.",
+                 "<b>Punto y aparte</b>: separa oraciones de distintos párrafos.",
+                 "<b>Punto final</b>: termina el texto.",
+                 "Los nombres propios también llevan mayúscula."],
+         ejemplos=["Pica", "Elisa", "Platero"],
+         recuerda="Seguido = sigo en la línea ➡️ · Aparte = párrafo nuevo ⬇️ · Final = fin 🏁"),
+    dict(clave="un adjetivo es una palabra", emoji="🌈", titulo="El adjetivo", pag="pág. 36",
+         c1="#339af0", c2="#a5d8ff",
+         puntos=["Es una palabra que se refiere a un <b>nombre</b>.",
+                 "Dice <b>cómo es</b> o <b>cómo está</b> lo nombrado.",
+                 "Suele ir junto al nombre, casi siempre <b>después</b>."],
+         ejemplos=["chica delgada", "pelo rubio", "ojos azules", "juego divertido", "león hambriento"],
+         recuerda="Nombre = la cosa 🧸 · Adjetivo = cómo es ✨"),
+    dict(clave="el adjetivo tiene el mismo", emoji="👫", titulo="Género y número del adjetivo", pag="pág. 36",
+         c1="#20c997", c2="#96f2d7",
+         puntos=["El adjetivo tiene el <b>mismo género</b> (masculino o femenino) que el nombre.",
+                 "Y el <b>mismo número</b> (singular o plural)."],
+         ejemplos=["energías limpias", "papeles reciclados", "trabajos dignos", "perra casera"],
+         recuerda="El adjetivo se pone igual que el nombre 👯"),
+    dict(clave="las descripciones usan", emoji="🍃", titulo="Las comparaciones", pag="págs. 32, 33 y 35",
+         c1="#51cf66", c2="#b2f2bb",
+         puntos=["Se usan para <b>entender mejor</b> cómo es algo.",
+                 "Comparan una cosa con otra usando «como»."],
+         ejemplos=["como el de un peluche = muy suave", "como de piedra = muy duro", "feliz como unas castañuelas = muy alegre"],
+         recuerda="«Como…» nos ayuda a imaginar 💭"),
+]
+
+if "slide" not in st.session_state:
+    st.session_state["slide"] = 0
+
+
+def ir(delta):
+    st.session_state["slide"] = max(0, min(len(SLIDES) - 1, st.session_state["slide"] + delta))
+
+
+def mostrar_diapositiva():
+    n = len(SLIDES)
+    i = st.session_state["slide"]
+    s = SLIDES[i]
+    st.markdown(
+        f'<div class="s-head" style="--c1:{s["c1"]};--c2:{s["c2"]}">'
+        f'<span class="s-badge">Diapositiva {i+1} de {n}</span>'
+        f'<div class="s-emoji">{s["emoji"]}</div>'
+        f'<p class="s-title">{s["titulo"]}</p><div class="s-pag">📖 {s["pag"]}</div></div>'
+        f'<div class="s-label" style="--c1:{s["c1"]}">🎧 Escucha la explicación</div>',
+        unsafe_allow_html=True)
+    audio = buscar_audio(s["clave"])
+    if audio:
+        st.audio(audio, format="audio/mp3")
+    else:
+        st.info("🎧 Falta el audio de esta diapositiva: sube el mp3 a la carpeta «audios» del repositorio.")
+    puntos = "".join(f"<li>{p}</li>" for p in s["puntos"])
+    chips = "".join(f"<span>{e}</span>" for e in s["ejemplos"])
+    st.markdown(
+        f'<div class="s-body" style="--c1:{s["c1"]};--c2:{s["c2"]}">'
+        f'<b>📝 Resumen</b><ul>{puntos}</ul>'
+        f'<b>⭐ Ejemplos</b><div class="chips">{chips}</div>'
+        f'<div class="remember">💡 {s["recuerda"]}</div></div>',
+        unsafe_allow_html=True)
+    dots = "".join("🟣" if k == i else "⚪" for k in range(n))
+    st.markdown(f'<div class="dots">{dots}</div>', unsafe_allow_html=True)
+    c1, c2 = st.columns(2)
+    c1.button("⬅️ Anterior", on_click=ir, args=(-1,), disabled=i == 0, key="prev")
+    c2.button("Siguiente ➡️", on_click=ir, args=(1,), disabled=i == n - 1, key="next")
+    if i == n - 1:
+        st.success("🎉 ¡Has terminado todas las diapositivas! Ahora practica en las otras pestañas.")
+
+
+st.markdown("""<div class="hero"><h1>🦄 Reino de las Palabras Mágicas 🧚</h1>
+<p>Repaso del EXAMEN UNIDAD 2 · Lengua 3.º EP-A · lunes 9 de noviembre</p></div>""", unsafe_allow_html=True)
 
 tabs = st.tabs(["📖 Aprende"] + list(SECCIONES.keys()) + ["🏆 Mini examen"])
 
 with tabs[0]:
-    st.markdown("### 🐱 Descripción de un animal (pág. 32)")
-    st.markdown("""<div class="card">La <b>descripción de un animal</b> explica cómo son sus
-    <b>rasgos físicos</b> (lo que se ve) y su <b>comportamiento</b> (cómo actúa).<br><br>
-    Ejemplos: <i>Pica es una gatita de cuerpo <span class="blue">suave</span> y
-    <span class="blue">pequeño</span>.</i> · <i>Platero es pequeño, peludo, suave.</i></div>""", unsafe_allow_html=True)
-
-    st.markdown("### 🔍 Diminutivos (pág. 31)")
-    st.markdown("""<div class="card">Los <b>diminutivos</b> indican un <b>tamaño menor</b> y a veces <b>cariño</b>.<br>
-    Terminaciones: <span class="purple">-ito, -ita, -illo, -illa</span><br>
-    Ejemplos: gat<b>ita</b>, patit<b>as</b>, nariz<b>illa</b>, flor<b>ecillas</b></div>""", unsafe_allow_html=True)
-
-    st.markdown("### 💪 Aumentativos (pág. 33)")
-    st.markdown("""<div class="card">Los <b>aumentativos</b> expresan un <b>tamaño mayor</b>.<br>
-    Terminaciones: <span class="pink">-ón, -ona, -azo, -aza, -ote, -ota</span><br>
-    Ejemplos: oj<b>azos</b>, perr<b>azo</b>, nariz<b>ota</b>, cuchar<b>ón</b></div>""", unsafe_allow_html=True)
-
-    st.markdown("### 🔴 El punto y las mayúsculas (pág. 35)")
-    st.markdown("""<div class="card">Las oraciones empiezan con <b>mayúscula</b> y terminan con <b>punto (.)</b><br><br>
-    • <b>Punto y seguido</b>: separa dos oraciones del <u>mismo párrafo</u>.<br>
-    • <b>Punto y aparte</b>: separa oraciones de <u>distintos párrafos</u>.<br>
-    • <b>Punto final</b>: es el que <u>finaliza el texto</u>.<br><br>
-    Los nombres propios (Pica, Elisa, Platero) también llevan mayúscula.</div>""", unsafe_allow_html=True)
-
-    st.markdown("### 🌈 El adjetivo (pág. 36)")
-    st.markdown("""<div class="card">Un <b>adjetivo</b> es una palabra que se refiere a un <b>nombre</b> y expresa
-    <b>cómo es</b> o <b>cómo está</b> lo nombrado.<br><br>
-    Wendy es una <span class="orange">chica</span> <span class="blue">delgada</span>, de
-    <span class="orange">pelo</span> <span class="blue">rubio</span> y
-    <span class="orange">ojos</span> <span class="blue">azules</span>.<br>
-    <span class="orange">Naranja = nombre</span> · <span class="blue">Azul = adjetivo</span><br><br>
-    • El adjetivo suele ir <b>junto a un nombre</b>: <i>juego divertido</i>.<br>
-    • Casi siempre va <b>después</b> del nombre (<i>león hambriento</i>), pero a veces va antes (<i>simpáticos avatares</i>).</div>""",
-                unsafe_allow_html=True)
-
-    st.markdown("### 👫 Género y número del adjetivo (pág. 36)")
-    st.markdown("""<div class="card">El adjetivo tiene el <b>mismo género</b> (masculino/femenino) y el
-    <b>mismo número</b> (singular/plural) que el nombre.<br><br>
-    energía limpia → energí<b>as</b> limpi<b>as</b><br>
-    papel reciclado → papel<b>es</b> reciclad<b>os</b><br>
-    trabajo digno → trabajo<b>s</b> digno<b>s</b></div>""", unsafe_allow_html=True)
-
-    st.markdown("### 🍃 Comparaciones")
-    st.markdown("""<div class="card">Las descripciones usan <b>comparaciones</b> para entender mejor:<br>
-    <span class="green">como el de un peluche</span> (muy suave) ·
-    <span class="green">como de piedra</span> (muy duro) ·
-    <span class="green">feliz como unas castañuelas</span> (muy alegre)</div>""", unsafe_allow_html=True)
+    mostrar_diapositiva()
 
 for tab, (nombre, (titulo, preguntas)) in zip(tabs[1:-1], SECCIONES.items()):
     with tab:
